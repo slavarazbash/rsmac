@@ -1,4 +1,5 @@
 library(dplyr)
+source('R/runner.R')
 
 #' Launch smac minimization
 #' 
@@ -15,7 +16,8 @@ library(dplyr)
 #' @custom_args: a dict of custom arguments to the objective function
 #' @max_evaluations: the maximum number of evaluations to execute
 #' @seed: the seed that SMAC is initialized with
-#' @cv_folds: set if you want to use cross-validation. The objective function will get an new `cv_fold` argument.
+#' @cv_folds: set if you want to use cross-validation. The objective function will 
+#' get an new `cv_fold` argument.
 #' @update_status_every: the number of num_evaluationss, between status updates
 #' @rf_num_trees: number of trees to create in random forest.
 #' @rf_full_tree_bootstrap: bootstrap all data points into trees.
@@ -36,15 +38,16 @@ minimize <- function(objective,
   stopifnot(length(x0_int) == length(xmin_int) && length(x0_int) == length(xmax_int))
   for (el in x_categorical) stopifnot(is.list(el))
   check_java_version()
-  if (cv_folds == 1) cv_folds <- NULL
+  if (!is.null(cv_folds) && cv_folds == 1) cv_folds <- NULL
   
   browser()
   smacRemoteCon <- get_remote_socket_con()
-  xs <- list(x0, xmin, xmax, x0_int, xmin_int, xmax_int, x_categorical)
+  xs_quoted <- quote(list(x0, xmin, xmax, x0_int, xmin_int, xmax_int, x_categorical))
+  xs <- eval(xs_quoted)
+  names(xs) <- sapply(2:length(xs_quoted), function(x) as.character(xs_quoted[x]))
   paths <- generate_files(cutoff_time=86400, cv_folds, xs)
-  smac_version <- "smac-v2.08.00-development-723"
   # smacRunner <- SMACRunner
-  start_smac(paths, smac_version)
+  start_smac(paths, smac_version, port)
   
   current_fmin <- NULL
   num_evaluations <- 0
