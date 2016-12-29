@@ -15,6 +15,6 @@ def branin(x):
     return ret
 
 xmin, fval = fmin(branin, x0=(0,0),xmin=(-5, 0), xmax=(10, 15), max_evaluations=100)
-# assert len(xmin) == 1
-# assert len(xmin["x"]) == 2
-# fval  # ~ 0.4
+assert len(xmin) == 1
+assert len(xmin["x"]) == 2
+fval  # ~ 0.4

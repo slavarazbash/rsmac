@@ -1,5 +1,0 @@
-https://github.com/sfalkner/pySMAC
-https://docs.python.org/2/library/subprocess.html#popen-constructor
-https://docs.python.org/2/library/socket.html
-http://blog.corynissen.com/2013/05/using-r-to-communicate-via-socket.html
-http://stackoverflow.com/questions/17766391/how-to-get-output-from-a-pipe-connection-before-closing-it-in-r
