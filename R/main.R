@@ -8,16 +8,13 @@
 #                                   \
 #                                    --> R (for objective)
 
-library(dplyr)
-
-
 checkPython <- function() {
   pythonExec <- if (Sys.info()['user'] == 'Gray') 
     'C:/Users/Gray/.conda/envs/py27/python' else 'python'
   pythonVersionFull <- tryCatch(
     system(paste(pythonExec, '--version'), intern=T), 
     error=function(e) stop('Python 2 not found'))
-  if (stringr::str_extract(pythonVersionFull, '(?i)(?<=python )\\d') != '2') {
+  if (str_extract(pythonVersionFull, '(?i)(?<=python )\\d') != '2') {
     stop('Python version must be equal 2')
   }
   pythonExec
@@ -57,12 +54,18 @@ validateSmacArgs <- function(objective, grid) {
     error=function(e) stop("Could not call objective function with initial grid values"))
 }
 
-
+#' Smac minimization function
+#' 
 #' @param objective objective function to minimize
-#' @param grid list of named lists like x1=list(type='continuous', init=0, min=-5, max=10)
+#' @param grid list like list(x1=list(type='continuous', init=0, min=-5, max=10), x2=..)
 #' @param ... additional parameters. The description is right after 'x_categorical' here:
 #' https://github.com/automl/pysmac/blob/
 #' a3452d56aa1f3352c36ec0750be75a1f8fafe509/pysmac/optimize.py#L28
+#' @examples
+#' if (interactive()) {
+#'   rsmacMinimize(objective, grid, max_evaluations=15)
+#' }
+#' @export
 rsmacMinimize <- function(objective, grid, ...) {
   pythonExec <- checkPython()
   checkPythonLibs(pythonExec)
