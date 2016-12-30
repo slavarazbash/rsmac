@@ -49,7 +49,6 @@ validateSmacArgs <- function(objective, grid) {
   if (length(names(formals(objective))) != length(grid)) {
     stop('Count of the objective parameters does not coincide with the grid list length')
   }
-  
   stopifnot(
     all(sapply(grid, `[[`, 'type') %in% c('continuous', 'discrete', 'categorical')))
   
@@ -77,7 +76,6 @@ rsmacMinimize <- function(objective, grid, ...) {
     if (exists('prevLine')) cat(prevLine, fill=T)
     prevLine <- line
   }
-  
   close(smacPipe)
   
   parsedResult <- prevLine %>% 

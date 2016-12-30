@@ -15,11 +15,6 @@ pysmacArgs = { 'objective': pyWrapObjective,
   'x0': [], 'xmin': [], 'xmax': [],
   'x0_int': [], 'xmin_int': [], 'xmax_int': [],
   'x_categorical': {} }
-  # 'x0': [0,0], 'xmin': [-5,0], 'xmax': [10,15],
-  # 'x0_int': [], 'xmin_int': [], 'xmax_int': [],
-  # 'x_categorical': {},
-  # 'max_evaluations': 5 }
-
 
 grid = r['rParamsList$grid']
 gridNames = r['names(rParamsList$grid)']
