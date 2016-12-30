@@ -62,8 +62,19 @@ validateSmacArgs <- function(objective, grid) {
 #' https://github.com/automl/pysmac/blob/
 #' a3452d56aa1f3352c36ec0750be75a1f8fafe509/pysmac/optimize.py#L28
 #' @examples
-#' if (interactive()) {
-#'   rsmacMinimize(objective, grid, max_evaluations=15)
+#' \dontrun{
+#' objective <- function(x1, x2) {
+#'   (x2 - (5.1 / (4*pi^2))*x1^2 + (5 / pi)*x1 - 6)^2 +
+#'     10*(1-(1 / (8*pi))) * cos(x1) + 10
+#' }
+#'
+#' grid <- list(
+#'   x1=list(type='continuous', init=0, min=-5, max=10),
+#'   x2=list(type='continuous', init=0, min=0, max=15))
+#'
+#' res <- rsmacMinimize(objective, grid, max_evaluations=15)
+#' cat('\n')
+#' print(res) 
 #' }
 #' @export
 rsmacMinimize <- function(objective, grid, ...) {
@@ -74,7 +85,8 @@ rsmacMinimize <- function(objective, grid, ...) {
   smacArgs <- append(list(objective=objective, grid=grid), list(...))
   serializedArgs <- gsub('"', "'", paste(deparse(smacArgs), collapse='[CRLF]'))
   
-  smacPipe <- pipe(sprintf('%s -i py/runner.py "%s"', pythonExec, serializedArgs), 'r')
+  smacPipe <- pipe(sprintf('%s -i inst/python/runner.py "%s"', 
+                           pythonExec, serializedArgs), 'r')
   while (length(line <- readLines(smacPipe, 1))) {
     if (exists('prevLine')) cat(prevLine, fill=T)
     prevLine <- line
