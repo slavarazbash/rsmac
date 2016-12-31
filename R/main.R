@@ -10,9 +10,10 @@
 
 checkPython <- function() {
   pythonExec <- if (Sys.info()['user'] == 'Gray') 
-    'C:/Users/Gray/.conda/envs/py27/python' else 'python'
+    'C:/Users/Gray/.conda/envs/py27/python' 
+    else '/Library/Frameworks/Python.framework/Versions/2.7/bin/python'
   pythonVersionFull <- tryCatch(
-    system(paste(pythonExec, '--version'), intern=T), 
+    system2(pythonExec, '--version', stdout=T, stderr=T), 
     error=function(e) stop('Python 2 not found'))
   if (str_extract(pythonVersionFull, '(?i)(?<=python )\\d') != '2') {
     stop('Python version must be equal 2')
@@ -20,22 +21,27 @@ checkPython <- function() {
   pythonExec
 }
 
+checkPyLib <- function(pythonExec, libName) {
+  needInstall <- suppressWarnings(if (Sys.info()['sysname'] == 'Windows') {
+    system(sprinf('%s -c "import %s"', pythonExec, libName, show=F))
+  } else {
+    length(system2('pip', c('freeze | grep', libName), stdout = T, stderr = T)) == 0
+  })
+  if (needInstall) system2('pip', c('install', libName))
+  needInstall
+}
+
 checkPythonLibs <- function(pythonExec) {
-  needPyper <- suppressWarnings(system(paste(pythonExec, '-c "import pyper"', show=F)))
-  if (needPyper) system('pip install PypeR')
+  checkPyLib(pythonExec, 'PypeR')
+  pysmacWasInstalled <- checkPyLib(pythonExec, 'pysmac')
   
-  needPysmac <- suppressWarnings(system(paste(pythonExec, '-c "import pysmac"', show=F)))
-  if (needPysmac) {
-    system('pip install pysmac')
-    
-    if (Sys.info()['sysname'] == 'Windows') {
-      libs <- system(paste(pythonExec, '-c "import sys; print sys.path"'), intern=T) %>% 
-        strsplit(", ") %>% `[[`(1) %>% grep("site-packages'$", ., value=T, perl=T) %>% 
-        head(1) %>% gsub("^'|'$", '',.) %>% gsub('\\\\+', '/',.)
-      stop('Please go to', libs, 
-           '/pysmac/smacrunner.py and fix [":".join(self._smac_classpath()),] to 
-           [";".join(self._smac_classpath()),]')
-    }
+  if (pysmacWasInstalled && Sys.info()['sysname'] == 'Windows') {
+    libs <- system(paste(pythonExec, '-c "import sys; print sys.path"'), intern=T) %>% 
+      strsplit(", ") %>% `[[`(1) %>% grep("site-packages'$", ., value=T, perl=T) %>% 
+      head(1) %>% gsub("^'|'$", '',.) %>% gsub('\\\\+', '/',.)
+    stop('Please go to', libs, 
+         '/pysmac/smacrunner.py and fix [":".join(self._smac_classpath()),] to 
+         [";".join(self._smac_classpath()),]')
   }
 }
 
@@ -60,7 +66,7 @@ validateSmacArgs <- function(objective, grid) {
 #' @param grid list like list(x1=list(type='continuous', init=0, min=-5, max=10), x2=..)
 #' @param ... additional parameters. The description is right after 'x_categorical' here:
 #' https://github.com/automl/pysmac/blob/
-#' a3452d56aa1f3352c36ec0750be75a1f8fafe509/pysmac/optimize.py#L28
+#'a3452d56aa1f3352c36ec0750be75a1f8fafe509/pysmac/optimize.py#L28
 #' @examples
 #' \dontrun{
 #' objective <- function(x1, x2) {
@@ -85,15 +91,14 @@ rsmacMinimize <- function(objective, grid, ...) {
   smacArgs <- append(list(objective=objective, grid=grid), list(...))
   serializedArgs <- gsub('"', "'", paste(deparse(smacArgs), collapse='[CRLF]'))
   
-  smacPipe <- pipe(sprintf('%s -i inst/python/runner.py "%s"', 
+  smacPipe <- pipe(sprintf('%s inst/python/runner.py "%s"', # -i
                            pythonExec, serializedArgs), 'r')
-  while (length(line <- readLines(smacPipe, 1))) {
-    if (exists('prevLine')) cat(prevLine, fill=T)
-    prevLine <- line
+  while (!startsWith(line <- readLines(smacPipe, 1), '[')) {
+    cat(line, fill=T)
   }
   close(smacPipe)
   
-  parsedResult <- prevLine %>% 
+  parsedResult <- line %>% 
     gsub('\\[|\\]', '', .) %>% trimws() %>% strsplit(' +') %>% 
     `[[`(1) %>% as.numeric  # prevLine e.g. "[ -2.78657385  11.17500087] 1.06589"
   
