@@ -27,7 +27,7 @@ checkPython <- function() {
 
 checkPyLib <- function(pythonExec, libName) {
   needInstall <- suppressWarnings(if (Sys.info()['sysname'] == 'Windows') {
-    system(sprinf('%s -c "import %s"', pythonExec, libName, show=F))
+    system(sprintf('%s -c "import %s"', pythonExec, libName, show=F))
   } else {
     length(system2('pip', c('freeze | grep', libName), stdout = T, stderr = T)) == 0
   })
@@ -94,8 +94,10 @@ rsmacMinimize <- function(objective, grid, ...) {
   smacArgs <- append(list(objective=objective, grid=grid), list(...))
   serializedArgs <- gsub('"', "'", paste(deparse(smacArgs), collapse='[CRLF]'))
   
-  smacPipe <- pipe(sprintf('%s inst/python/runner.py "%s"', # -i
-                           pythonExec, serializedArgs), 'r')
+  smacPipe <- pipe(sprintf('%s inst/python/runner.py %s "%s"',
+                           pythonExec, 
+                           if (Sys.info()['sysname'] == 'Windows') '-i' else '',
+                           serializedArgs), 'r')
   while (!startsWith(line <- readLines(smacPipe, 1), '[')) {
     cat(line, fill=T)
   }
