@@ -8,6 +8,10 @@
 #                                   \
 #                                    --> R (for objective)
 
+# TODO: python -i
+# TODO: check the way to determine python location on Mac
+# check extra parameters git url
+
 checkPython <- function() {
   pythonExec <- if (Sys.info()['user'] == 'Gray') 
     'C:/Users/Gray/.conda/envs/py27/python' 
@@ -65,8 +69,7 @@ validateSmacArgs <- function(objective, grid) {
 #' @param objective objective function to minimize
 #' @param grid list like list(x1=list(type='continuous', init=0, min=-5, max=10), x2=..)
 #' @param ... additional parameters. The description is right after 'x_categorical' here:
-#' https://github.com/automl/pysmac/blob/
-#'a3452d56aa1f3352c36ec0750be75a1f8fafe509/pysmac/optimize.py#L28
+#' https://github.com/automl/pysmac/blob/a3452d56aa1f3352c36ec0750be75a1f8fafe509/pysmac/optimize.py#L28
 #' @examples
 #' \dontrun{
 #' objective <- function(x1, x2) {

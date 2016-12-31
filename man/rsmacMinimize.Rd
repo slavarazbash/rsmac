@@ -12,8 +12,7 @@ rsmacMinimize(objective, grid, ...)
 \item{grid}{list like list(x1=list(type='continuous', init=0, min=-5, max=10), x2=..)}
 
 \item{...}{additional parameters. The description is right after 'x_categorical' here:
-https://github.com/automl/pysmac/blob/
-a3452d56aa1f3352c36ec0750be75a1f8fafe509/pysmac/optimize.py#L28}
+https://github.com/automl/pysmac/blob/a3452d56aa1f3352c36ec0750be75a1f8fafe509/pysmac/optimize.py#L28}
 }
 \description{
 Smac minimization function
