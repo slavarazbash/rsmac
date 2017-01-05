@@ -10,12 +10,18 @@
 
 # TODO: python -i
 # TODO: check the way to determine python location on Mac
-# check extra parameters git url
+
+closeAllConnections()
+isWindows <- Sys.info()['sysname'] == 'Windows'
 
 checkPython <- function() {
-  pythonExec <- if (Sys.info()['user'] == 'Gray') 
-    'C:/Users/Gray/.conda/envs/py27/python' 
-    else '/Library/Frameworks/Python.framework/Versions/2.7/bin/python'
+  pythonExec <- if (Sys.info()['user'] == 'Gray' ) {
+    'C:/Users/Gray/.conda/envs/py27/python'
+  } else if (!isWindows) {
+    '/Library/Frameworks/Python.framework/Versions/2.7/bin/python' 
+  } else {
+    'python'
+  }
   pythonVersionFull <- tryCatch(
     system2(pythonExec, '--version', stdout=T, stderr=T), 
     error=function(e) stop('Python 2 not found'))
@@ -26,8 +32,8 @@ checkPython <- function() {
 }
 
 checkPyLib <- function(pythonExec, libName) {
-  needInstall <- suppressWarnings(if (Sys.info()['sysname'] == 'Windows') {
-    system(sprintf('%s -c "import %s"', pythonExec, libName, show=F))
+  needInstall <- suppressWarnings(if (isWindows) {
+    system(sprintf('%s -c "import %s"', pythonExec, tolower(libName), show=F))
   } else {
     length(system2('pip', c('freeze | grep', libName), stdout = T, stderr = T)) == 0
   })
@@ -39,7 +45,7 @@ checkPythonLibs <- function(pythonExec) {
   checkPyLib(pythonExec, 'PypeR')
   pysmacWasInstalled <- checkPyLib(pythonExec, 'pysmac')
   
-  if (pysmacWasInstalled && Sys.info()['sysname'] == 'Windows') {
+  if (pysmacWasInstalled && isWindows) {
     libs <- system(paste(pythonExec, '-c "import sys; print sys.path"'), intern=T) %>% 
       strsplit(", ") %>% `[[`(1) %>% grep("site-packages'$", ., value=T, perl=T) %>% 
       head(1) %>% gsub("^'|'$", '',.) %>% gsub('\\\\+', '/',.)
@@ -94,9 +100,9 @@ rsmacMinimize <- function(objective, grid, ...) {
   smacArgs <- append(list(objective=objective, grid=grid), list(...))
   serializedArgs <- gsub('"', "'", paste(deparse(smacArgs), collapse='[CRLF]'))
   
-  smacPipe <- pipe(sprintf('%s inst/python/runner.py %s "%s"',
+  smacPipe <- pipe(sprintf('%s %s inst/python/runner.py "%s"',
                            pythonExec, 
-                           if (Sys.info()['sysname'] == 'Windows') '-i' else '',
+                           if (isWindows) '-i' else '',
                            serializedArgs), 'r')
   while (!startsWith(line <- readLines(smacPipe, 1), '[')) {
     cat(line, fill=T)
