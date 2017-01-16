@@ -6,8 +6,9 @@ import sys
 # print os.getpid()  # to kill interactive process on Mac
 args = sys.argv[1]
 r = R()
-r('rParamsList <- eval(parse(text="%s"))' % args.replace('[CRLF]', '\n'))
-r('rObjective <- rParamsList$objective')
+r('rArgsList <- eval(parse(text="%s"))' % args.replace('[CRLF]', '\n'))
+r('eval(rArgsList$init_rcode)')
+r('rObjective <- rArgsList$objective')
 
 def pyWrapObjective(x):
   r.x = x
@@ -18,8 +19,8 @@ pysmacArgs = { 'objective': pyWrapObjective,
   'x0_int': [], 'xmin_int': [], 'xmax_int': [],
   'x_categorical': {} }
 
-grid = r['rParamsList$grid']
-gridNames = r['names(rParamsList$grid)']
+grid = r['rArgsList$grid']
+gridNames = r['names(rArgsList$grid)']
 
 for gridName in gridNames:
   gridVar = grid[gridName]
@@ -36,8 +37,8 @@ for gridName in gridNames:
   else:
     raise Exception('No such type for grid var')
   
-r('rParamsList[c("grid", "objective")] <- NULL')
-pysmacArgs.update(r['rParamsList'])  # merge the rest arguments
+r('rArgsList[c("grid", "objective", "init_rcode")] <- NULL')
+pysmacArgs.update(r['rArgsList'])  # merge the rest arguments
 
 try:
   xmin, fval = fmin(**pysmacArgs)

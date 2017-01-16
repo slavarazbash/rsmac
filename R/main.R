@@ -8,8 +8,6 @@
 #                                   \
 #                                    --> R (for objective)
 
-# TODO: python -i
-# TODO: check the way to determine python location on Mac
 
 closeAllConnections()
 isWindows <- Sys.info()['sysname'] == 'Windows'
@@ -55,9 +53,11 @@ checkPythonLibs <- function(pythonExec) {
   }
 }
 
-validateSmacArgs <- function(objective, grid) {
+validateSmacArgs <- function(objective, grid, target) {
   stopifnot(is.function(objective))
   stopifnot(is.list(grid))
+  browser()
+  stopifnot(class(substitute(target)) == '{')
   
   if (length(names(formals(objective))) != length(grid)) {
     stop('Count of the objective parameters does not coincide with the grid list length')
@@ -74,6 +74,8 @@ validateSmacArgs <- function(objective, grid) {
 #' 
 #' @param objective objective function to minimize
 #' @param grid list like list(x1=list(type='continuous', init=0, min=-5, max=10), x2=..)
+#' @param init_rcode r code expression that will be runned once before pysmac.
+#' Can be NULL if objective is totally data independent
 #' @param ... additional parameters. The description is right after "x_categorical" here:
 #' https://github.com/automl/pysmac/blob/a3452d56aa1f3352c36ec0750be75a1f8fafe509/pysmac/optimize.py#L28
 #' @examples
@@ -92,12 +94,15 @@ validateSmacArgs <- function(objective, grid) {
 #' print(res) 
 #' }
 #' @export
-rsmacMinimize <- function(objective, grid, ...) {
+rsmacMinimize <- function(objective, grid, init_rcode, ...) {
   pythonExec <- checkPython()
   checkPythonLibs(pythonExec)
-  validateSmacArgs(objective, grid)
+  validateSmacArgs(objective, grid, init_rcode)
+  browser()
   
-  smacArgs <- append(list(objective=objective, grid=grid), list(...))
+  smacArgs <- append(list(objective=objective, grid=grid, 
+                          init_rcode=substitute(init_rcode)), 
+                     list(...))
   serializedArgs <- gsub('"', "'", paste(deparse(smacArgs), collapse='[CRLF]'))
   py_console <- get_py_console(pythonExec, serializedArgs)
   
