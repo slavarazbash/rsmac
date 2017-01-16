@@ -1,7 +1,9 @@
 from pyper import R
 from pysmac.optimize import fmin
 import sys
+# import os
 
+# print os.getpid()  # to kill interactive process on Mac
 args = sys.argv[1]
 r = R()
 r('rParamsList <- eval(parse(text="%s"))' % args.replace('[CRLF]', '\n'))

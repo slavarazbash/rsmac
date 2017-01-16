@@ -99,15 +99,12 @@ rsmacMinimize <- function(objective, grid, ...) {
   
   smacArgs <- append(list(objective=objective, grid=grid), list(...))
   serializedArgs <- gsub('"', "'", paste(deparse(smacArgs), collapse='[CRLF]'))
+  py_console <- get_py_console(pythonExec, serializedArgs)
   
-  smacPipe <- pipe(sprintf('%s %s inst/python/runner.py "%s"',
-                           pythonExec, 
-                           if (isWindows) '-i' else '',
-                           serializedArgs), 'r')
-  while (!startsWith(line <- readLines(smacPipe, 1), '[')) {
+  while (!startsWith(line <- readLines(py_console$output, 1), '[')) {
     cat(line, fill=T)
   }
-  close(smacPipe)
+  for (stream in py_console) close(stream)
   
   parsedResult <- line %>% 
     gsub('\\[|\\]', '', .) %>% trimws() %>% strsplit(' +') %>% 
@@ -116,4 +113,21 @@ rsmacMinimize <- function(objective, grid, ...) {
   targetMin <- tail(parsedResult, 1)
   optimizedX <- head(parsedResult, -1)
   list(targetMin=targetMin, optimizedX=optimizedX)
+}
+
+get_py_console <- function(pythonExec, serializedArgs) {
+  if (isWindows) {
+    return(list(output=
+      pipe(sprintf('%s -i inst/python/runner.py "%s" 2>&1',
+                        pythonExec, serializedArgs), 'r')))
+  }
+
+  stopifnot(capabilities("fifo"))
+  fifo_file_name <- '/tmp/Rpython.fifo'
+  if (!file.exists(fifo_file_name)) system2('mkfifo', fifo_file_name)
+  output <- fifo(fifo_file_name, 'r')
+  readLines(output)  # if fifo file was not empty
+  input  <- pipe(sprintf('%s -i inst/python/runner.py "%s" > %s 2>&1', 
+                         pythonExec, serializedArgs, fifo_file_name), 'w')
+  list(input=input, output=output)
 }
