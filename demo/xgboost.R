@@ -10,7 +10,8 @@ grid <- list(
 objective <- function(max.depth, eta, subsample, nrounds) {
   params <- list(objective = "binary:logistic",
                  max.depth = max.depth, eta=eta, subsample=subsample)
-  cv_history <- xgb.cv(params, xgb.DMatrix(train$data, label = train$label),
+
+  cv_history <- xgb.cv(params, xgb.DMatrix(train[['data']], label = train[['label']]),
                        nrounds = nrounds,  # nthread = max(1, parallel::detectCores() - 2),
                        nfold = 2, verbose=F, prediction=F)
   cv_score <- min(cv_history[, 3, with=F])

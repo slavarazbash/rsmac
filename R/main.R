@@ -55,6 +55,10 @@ checkPythonLibs <- function(pythonExec) {
 
 validateSmacArgs <- function(grid, objective, pysmac_args, rcode) {
   stopifnot(is.function(objective))
+  if (grepl('\\$', paste0(deparse(body(objective)), collapse='')) && !isWindows) {
+    stop('Please rewrite objective to make the function free of "$" characters.\n',
+         'It is a workaround for one python "pyper" library bug')
+  }
   stopifnot(is.list(grid))
   stopifnot(is.null(pysmac_args) || is.list(pysmac_args))
   stopifnot(class(rcode) == '{' || is.null(rcode))
