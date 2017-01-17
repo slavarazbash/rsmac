@@ -9,8 +9,6 @@ r('r_args_list <- eval(parse(text="%s"))' % args.replace('[CRLF]', '\n'))
 r('eval(r_args_list$init_rcode)')
 r('r_objective <- r_args_list$objective')
 r('grid <- r_args_list$grid')
-print r['class(train$data)']
-assert False
 
 # kwargs examples
 # {'x': array([ 5.22359753,  0.526101  ])}

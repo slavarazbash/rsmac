@@ -1,3 +1,4 @@
+# devtools::install(); source('demo/xgboost.R')
 library(rsmac)
 
 grid <- list(
