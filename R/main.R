@@ -59,8 +59,8 @@ validateSmacArgs <- function(grid, objective, pysmac_args, rcode) {
   stopifnot(is.null(pysmac_args) || is.list(pysmac_args))
   stopifnot(class(rcode) == '{' || is.null(rcode))
   
-  if (length(names(formals(objective))) != length(grid)) {
-    stop('Count of the objective parameters does not coincide with the grid list length')
+  if (!setequal(names(grid), names(formals(objective)))) {
+    stop('Objective parameters does not coincide with the grid names')
   }
   stopifnot(
     all(sapply(grid, `[[`, 'type') %in% c('continuous', 'discrete')))#, 'categorical')))
@@ -105,14 +105,29 @@ rsmac_minimize <- function(grid, objective, pysmac_args=NULL, init_rcode=NULL) {
   serializedArgs <- gsub('"', "'", paste(deparse(smacArgs), collapse='[CRLF]'))
   
   py_console <- get_py_console(pythonExec, serializedArgs)
-  while (!startsWith(line <- readLines(py_console$output, 1), 'pysmac>>')) {
-    cat(line, fill=T)
-  }
+  final_line <- track_console(py_console)
   for (stream in py_console) close(stream)
   
-  parsed_result <- line %>% strsplit("%\\+%") %>% `[[`(1) %>% tail(-1)
+  parsed_result <- final_line %>% strsplit("%\\+%") %>% `[[`(1) %>% tail(-1)
   list(target_min  = as.numeric(parsed_result[1]), 
        optimized_x = eval(parse(text=parsed_result[2])))
+}
+
+track_console <- function(py_console) {
+  if (isWindows) {
+    while (!startsWith(line <- readLines(py_console$output, 1), 'pysmac>>')) {
+      cat(line, fill=T)
+    }
+  } else {
+    line <- ''
+    while (!startsWith(line, 'pysmac>>')) {
+      cat(line, fill=T)
+      while (!length(line <- readLines(py_console$output, 1))) {
+        Sys.sleep(0.1)
+      }
+    }
+  }
+  line
 }
 
 get_py_console <- function(pythonExec, serializedArgs) {

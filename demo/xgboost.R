@@ -21,9 +21,7 @@ pysmac_args <- list(max_evaluations=50)
 res <- rsmac_minimize(grid, objective, pysmac_args, init_rcode = {
   library(xgboost)
   data(agaricus.train, package='xgboost')
-  data(agaricus.test, package='xgboost')
   train <- agaricus.train
-  test <- agaricus.test
 })
 
 stopifnot(res$target_min < 0.001)

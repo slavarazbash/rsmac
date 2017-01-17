@@ -1,3 +1,5 @@
+library(rsmac)
+
 grid <- list(
   x1=list(type='continuous', init=0, min=-5, max=10),
   x2=list(type='continuous', init=0, min=0, max=15))
