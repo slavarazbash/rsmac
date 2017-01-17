@@ -1,4 +1,3 @@
-# devtools::install(); source('demo/branin.R')
 library(rsmac)
 
 grid <- list(

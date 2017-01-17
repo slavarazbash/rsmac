@@ -9,9 +9,10 @@
 #                                    --> R (for objective)
 # TODO: implement categorical
 
-
+utils::globalVariables(c(".", "%>%"))
 isWindows <- Sys.info()['sysname'] == 'Windows'
 
+#' @importFrom stringr str_extract
 checkPython <- function() {
   pythonExec <- if (Sys.info()['user'] == 'Gray' ) {
     'C:/Users/Gray/.conda/envs/py27/python'
@@ -39,6 +40,8 @@ checkPyLib <- function(pythonExec, libName) {
   needInstall
 }
 
+#' @importFrom dplyr "%>%"
+#' @importFrom utils head tail
 checkPythonLibs <- function(pythonExec) {
   checkPyLib(pythonExec, 'PypeR')
   pysmacWasInstalled <- checkPyLib(pythonExec, 'pysmac')
@@ -70,7 +73,7 @@ validateSmacArgs <- function(grid, objective, pysmac_args, rcode) {
     all(sapply(grid, `[[`, 'type') %in% c('continuous', 'discrete')))#, 'categorical')))
   # tryCatch(
   #   do.call(objective, lapply(grid, `[[`, 'init')),
-  #   error=function(e) stop("Could not call objective function with initial grid values"))
+  #   error=function(e) stop("Could not call objectiv function with initial grid values"))
 }
 
 #' Smac minimization function
@@ -78,7 +81,10 @@ validateSmacArgs <- function(grid, objective, pysmac_args, rcode) {
 #' @param grid list like list(x1=list(type='continuous', init=0, min=-5, max=10), x2=..)
 #' @param objective objective function to minimize
 #' @param pysmac_args list of pysmac additional parameters. The description is here:
-#' https://github.com/automl/pysmac/blob/a3452d56aa1f3352c36ec0750be75a1f8fafe509/pysmac/optimize.py#L32-L38
+#' \url{
+#' https://github.com/automl/pysmac/blob/a3452d56aa1f3352c36ec0750be75a1f8fafe509/
+#' pysmac/optimize.py#L32-L38
+#' }
 #' @param init_rcode r code expression that will be runned once before pysmac
 #' @examples
 #' \dontrun{
@@ -91,7 +97,11 @@ validateSmacArgs <- function(grid, objective, pysmac_args, rcode) {
 #'   x1=list(type='continuous', init=0, min=-5, max=10),
 #'   x2=list(type='continuous', init=0, min=0, max=15))
 #'
-#' res <- rsmac_minimize(objective, grid, max_evaluations=15)
+#' res <- rsmac_minimize(grid, objective, list(max_evaluations=100))
+#' 
+#' stopifnot(abs(res$target_min - 0.6) < 0.1)
+#' stopifnot(abs(res$optimized_x$x1 - 2.937) < 0.1)
+#' stopifnot(abs(res$optimized_x$x2 - 2.365) < 0.1)
 #' cat('\n')
 #' print(res) 
 #' }
