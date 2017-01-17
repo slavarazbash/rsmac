@@ -42,6 +42,7 @@ read_write_pipe_case <- function() {
 
 fifo_file_name <- '/tmp/Rpython.fifo'
 output <- fifo(fifo_file_name, 'r')
-pip <- pipe(sprintf('python -i R/sand.py > %s 2>&1', fifo_file_name),  'w')
+pip <- pipe(sprintf('python -i inst/sandbox/mac_pipe/runned_script.py > %s 2>&1', 
+                    fifo_file_name),  'w')
 pid <- readLines(output, 1)
 closeAllConnections()

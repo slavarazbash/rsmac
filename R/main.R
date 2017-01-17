@@ -7,9 +7,9 @@
 # current R -> Python (manage+pysmac)--> Java (smac)
 #                                   \
 #                                    --> R (for objective)
+# TODO: implement categorical
 
 
-closeAllConnections()
 isWindows <- Sys.info()['sysname'] == 'Windows'
 
 checkPython <- function() {
@@ -53,31 +53,29 @@ checkPythonLibs <- function(pythonExec) {
   }
 }
 
-validateSmacArgs <- function(objective, grid, target) {
+validateSmacArgs <- function(objective, grid, pysmac_args, rcode) {
   stopifnot(is.function(objective))
   stopifnot(is.list(grid))
-  browser()
-  stopifnot(class(substitute(target)) == '{')
+  stopifnot(is.null(pysmac_args) || is.list(pysmac_args))
+  stopifnot(class(rcode) == '{')
   
   if (length(names(formals(objective))) != length(grid)) {
     stop('Count of the objective parameters does not coincide with the grid list length')
   }
   stopifnot(
-    all(sapply(grid, `[[`, 'type') %in% c('continuous', 'discrete', 'categorical')))
-  
-  tryCatch(
-    do.call(objective, lapply(grid, `[[`, 'init')),
-    error=function(e) stop("Could not call objective function with initial grid values"))
+    all(sapply(grid, `[[`, 'type') %in% c('continuous', 'discrete')))#, 'categorical')))
+  # tryCatch(
+  #   do.call(objective, lapply(grid, `[[`, 'init')),
+  #   error=function(e) stop("Could not call objective function with initial grid values"))
 }
 
 #' Smac minimization function
 #' 
 #' @param objective objective function to minimize
 #' @param grid list like list(x1=list(type='continuous', init=0, min=-5, max=10), x2=..)
-#' @param init_rcode r code expression that will be runned once before pysmac.
-#' Can be NULL if objective is totally data independent
-#' @param ... additional parameters. The description is right after "x_categorical" here:
+#' @param pysmac_args additional parameters. The description is right after "x_categorical" here:
 #' https://github.com/automl/pysmac/blob/a3452d56aa1f3352c36ec0750be75a1f8fafe509/pysmac/optimize.py#L28
+#' @param init_rcode r code expression that will be runned once before pysmac
 #' @examples
 #' \dontrun{
 #' objective <- function(x1, x2) {
@@ -89,41 +87,39 @@ validateSmacArgs <- function(objective, grid, target) {
 #'   x1=list(type='continuous', init=0, min=-5, max=10),
 #'   x2=list(type='continuous', init=0, min=0, max=15))
 #'
-#' res <- rsmacMinimize(objective, grid, max_evaluations=15)
+#' res <- rsmac_minimize(objective, grid, max_evaluations=15)
 #' cat('\n')
 #' print(res) 
 #' }
 #' @export
-rsmacMinimize <- function(objective, grid, init_rcode, ...) {
+rsmac_minimize <- function(objective, grid, pysmac_args=NULL, init_rcode=NULL) {
   pythonExec <- checkPython()
   checkPythonLibs(pythonExec)
-  validateSmacArgs(objective, grid, init_rcode)
-  browser()
+  validateSmacArgs(objective, grid, pysmac_args, as.call(substitute(init_rcode)))
   
   smacArgs <- append(list(objective=objective, grid=grid, 
                           init_rcode=substitute(init_rcode)), 
-                     list(...))
+                     pysmac_args)
   serializedArgs <- gsub('"', "'", paste(deparse(smacArgs), collapse='[CRLF]'))
-  py_console <- get_py_console(pythonExec, serializedArgs)
   
+  py_console <- get_py_console(pythonExec, serializedArgs)
   while (!startsWith(line <- readLines(py_console$output, 1), '[')) {
     cat(line, fill=T)
   }
   for (stream in py_console) close(stream)
   
-  parsedResult <- line %>% 
+  parsed_result <- line %>% 
     gsub('\\[|\\]', '', .) %>% trimws() %>% strsplit(' +') %>% 
     `[[`(1) %>% as.numeric  # prevLine e.g. "[ -2.78657385  11.17500087] 1.06589"
-  
-  targetMin <- tail(parsedResult, 1)
-  optimizedX <- head(parsedResult, -1)
-  list(targetMin=targetMin, optimizedX=optimizedX)
+  optimized_x <- head(parsed_result, -1)
+  names(optimized_x) <- names(formals(objective))
+  list(target_min = tail(parsed_result, 1), optimized_x = optimized_x)
 }
 
 get_py_console <- function(pythonExec, serializedArgs) {
   if (isWindows) {
     return(list(output=
-      pipe(sprintf('%s -i inst/python/runner.py "%s" 2>&1',
+      pipe(sprintf('%s -i inst/python/runner.py "%s"',  # 2>&1
                         pythonExec, serializedArgs), 'r')))
   }
 
@@ -132,7 +128,7 @@ get_py_console <- function(pythonExec, serializedArgs) {
   if (!file.exists(fifo_file_name)) system2('mkfifo', fifo_file_name)
   output <- fifo(fifo_file_name, 'r')
   readLines(output)  # if fifo file was not empty
-  input  <- pipe(sprintf('%s -i inst/python/runner.py "%s" > %s 2>&1', 
+  input  <- pipe(sprintf('%s -i inst/python/runner.py "%s" > %s',   # 2>&1
                          pythonExec, serializedArgs, fifo_file_name), 'w')
   list(input=input, output=output)
 }

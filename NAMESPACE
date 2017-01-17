@@ -3,4 +3,4 @@
 importFrom("utils", "head", "tail")
 importFrom("stringr", "str_extract")
 importFrom("dplyr", "%>%")
-export(rsmacMinimize)
+export(rsmac_minimize)
