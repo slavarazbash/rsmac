@@ -53,11 +53,11 @@ checkPythonLibs <- function(pythonExec) {
   }
 }
 
-validateSmacArgs <- function(objective, grid, pysmac_args, rcode) {
+validateSmacArgs <- function(grid, objective, pysmac_args, rcode) {
   stopifnot(is.function(objective))
   stopifnot(is.list(grid))
   stopifnot(is.null(pysmac_args) || is.list(pysmac_args))
-  stopifnot(class(rcode) == '{')
+  stopifnot(class(rcode) == '{' || is.null(rcode))
   
   if (length(names(formals(objective))) != length(grid)) {
     stop('Count of the objective parameters does not coincide with the grid list length')
@@ -71,10 +71,10 @@ validateSmacArgs <- function(objective, grid, pysmac_args, rcode) {
 
 #' Smac minimization function
 #' 
-#' @param objective objective function to minimize
 #' @param grid list like list(x1=list(type='continuous', init=0, min=-5, max=10), x2=..)
-#' @param pysmac_args additional parameters. The description is right after "x_categorical" here:
-#' https://github.com/automl/pysmac/blob/a3452d56aa1f3352c36ec0750be75a1f8fafe509/pysmac/optimize.py#L28
+#' @param objective objective function to minimize
+#' @param pysmac_args list of pysmac additional parameters. The description is here:
+#' https://github.com/automl/pysmac/blob/a3452d56aa1f3352c36ec0750be75a1f8fafe509/pysmac/optimize.py#L32-L38
 #' @param init_rcode r code expression that will be runned once before pysmac
 #' @examples
 #' \dontrun{
@@ -92,28 +92,27 @@ validateSmacArgs <- function(objective, grid, pysmac_args, rcode) {
 #' print(res) 
 #' }
 #' @export
-rsmac_minimize <- function(objective, grid, pysmac_args=NULL, init_rcode=NULL) {
+rsmac_minimize <- function(grid, objective, pysmac_args=NULL, init_rcode=NULL) {
   pythonExec <- checkPython()
   checkPythonLibs(pythonExec)
-  validateSmacArgs(objective, grid, pysmac_args, as.call(substitute(init_rcode)))
+  subst_init_rcode <- substitute(init_rcode)
+  validateSmacArgs(grid, objective, pysmac_args, 
+                   if (!is.null(subst_init_rcode)) as.call(subst_init_rcode) else NULL)
   
   smacArgs <- append(list(objective=objective, grid=grid, 
-                          init_rcode=substitute(init_rcode)), 
+                          init_rcode=subst_init_rcode), 
                      pysmac_args)
   serializedArgs <- gsub('"', "'", paste(deparse(smacArgs), collapse='[CRLF]'))
   
   py_console <- get_py_console(pythonExec, serializedArgs)
-  while (!startsWith(line <- readLines(py_console$output, 1), '[')) {
+  while (!startsWith(line <- readLines(py_console$output, 1), 'pysmac>>')) {
     cat(line, fill=T)
   }
   for (stream in py_console) close(stream)
   
-  parsed_result <- line %>% 
-    gsub('\\[|\\]', '', .) %>% trimws() %>% strsplit(' +') %>% 
-    `[[`(1) %>% as.numeric  # prevLine e.g. "[ -2.78657385  11.17500087] 1.06589"
-  optimized_x <- head(parsed_result, -1)
-  names(optimized_x) <- names(formals(objective))
-  list(target_min = tail(parsed_result, 1), optimized_x = optimized_x)
+  parsed_result <- line %>% strsplit("%\\+%") %>% `[[`(1) %>% tail(-1)
+  list(target_min  = as.numeric(parsed_result[1]), 
+       optimized_x = eval(parse(text=parsed_result[2])))
 }
 
 get_py_console <- function(pythonExec, serializedArgs) {
