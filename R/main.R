@@ -106,8 +106,12 @@ validateSmacArgs <- function(grid, objective, pysmac_args, rcode) {
 #' print(res) 
 #' }
 #' @export
-rsmac_minimize <- function(grid, objective, pysmac_args=NULL, init_rcode=NULL) {
-  pythonExec <- checkPython()
+rsmac_minimize <- function(grid, objective, pysmac_args=NULL, init_rcode=NULL, pythonExec=NULL) {
+
+  if(is.null(pythonExec)) {
+	  pythonExec <- checkPython()  
+  } 
+	
   checkPythonLibs(pythonExec)
   subst_init_rcode <- substitute(init_rcode)
   validateSmacArgs(grid, objective, pysmac_args, 
