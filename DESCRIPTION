@@ -5,7 +5,8 @@ Version: 0.1
 Date: 2016-30-12
 Authors@R: c(person("Eugene", "Dubossarsky", role=c("aut", "cph", "cre"),
            email="eugene@presciient.com"),
-    person("Sergey", "Skripko", role="ctb", comment="Developer"))
+    person("Sergey", "Skripko", role="ctb", comment="Developer"),
+    person("Slava", "Razbash", role="ctb"))
 Description: R wrapper for pysmac.
 License: GPL (>= 2)
 Imports:
