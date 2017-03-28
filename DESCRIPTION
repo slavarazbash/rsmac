@@ -12,5 +12,6 @@ License: GPL (>= 2)
 Imports:
   dplyr,
   stringr
+Suggests: xgboost, pROC
 BugReports: https://github.com/grayskripko/rsmac/issues
 RoxygenNote: 5.0.1
